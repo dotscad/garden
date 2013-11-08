@@ -1,12 +1,66 @@
-// bee tube: 150mm long, 5/16" or 8mm diameter
+/**
+ * mason_bee_house.scad
+ *
+ * A parametric module to generate a hexagonal nesting house for
+ * [Orchard Mason Bees](http://en.wikipedia.org/wiki/Orchard_mason_bee).
+ *
+ * This prints in 3 parts so that it can be broken down for storage, and for easy access
+ * to the nest holes for cleaning.  Being able to disconnect the nest from the base also
+ * allows it to be easily moved to different pollination zones or under cover for winter
+ * storage.  Along with the shroud, the slight downward tilt of the nest is intended to
+ * keep the nest protected from rain/moisture.
+ *
+ * The holes diameter (5/16" or 8mm) is based on the paper tubes sold by
+ * [Knox Cellars](http://www.knoxcellars.com/), which they describe as the most optimal
+ * size for the bees.
+ *
+ * The default 15cm height value is intended to fit the paper tubes made/sold by Knox
+ * Cellars.  These are not required but if used properly can contribute to the overall
+ * health of your bee colony.  If your printer can print the full height, I would
+ * encourage you to do so and use the paper tubes.
+ *
+ * This openSCAD library is part of the [dotscad](https://github.com/dotscad/dotscad)
+ * project.
+ *
+ * @copyright  Chris Petersen, 2013
+ * @license    http://creativecommons.org/licenses/LGPL/2.1/
+ * @license    http://creativecommons.org/licenses/by-sa/3.0/
+ *
+ * @see        http://www.thingiverse.com/thing:179830
+ * @source     https://github.com/dotscad/garden/blob/master/mason_bees/mason_bee_house.scad
+ */
 
-BEE_SHROUD="shroud";
-BEE_BASE="base";
-BEE_NEST="nest";
+/* ******************************************************************************
+ * Customizer parameters and rendering
+ * ****************************************************************************** */
 
-// default number of 4 is perfect for attaching to a 4x4 post
+/* [Global] */
 
-module bees(which, num=4, height=150, $fn=50) {
+// Height of the main nest.  150mm fits the paper tubes sold by Knox Cellars
+nest_height = 150; // [50:150]
+
+// Number of nest holes per side.  4 is perfect for attaching to a 4x4 post
+nest_holes = 4; // [2:8]
+
+// Part to print
+which_part="All"; // [All,Nest,Base,Shroud]
+
+/* [Hidden] */
+
+// Render the part(s)
+mason_bee_house(which_part=which_part, nest_holes=nest_holes, nest_height=nest_height);
+
+/* ******************************************************************************
+ * Main module code below:
+ * ****************************************************************************** */
+
+/**
+ * Renders some or all parts of a mason bee house/nest.
+ * @param int    height Height of the nest, in mm
+ * @param int    num    Number of nest holes per side of the hexagonal nest
+ * @param string which  Which part or parts to render (All,Nest,Base,Shroud)
+ */
+module mason_bee_house(nest_height=150, nest_holes=4, which_part="All", $fn=25) {
     inner_wall = 1.2;
 
     tube_r = 4.25; // make slightly larger than 8mm to account for shrinkage
@@ -14,7 +68,7 @@ module bees(which, num=4, height=150, $fn=50) {
 
     o=.1;
 
-    dia= num * 2 - 1;
+    dia= nest_holes * 2 - 1;
     outer_wall=5;
     squeeze= sin(60)* 2 * straw_r;
     x_adj = straw_r * 2;
@@ -23,12 +77,12 @@ module bees(which, num=4, height=150, $fn=50) {
     outer_radius = dia * straw_r + outer_wall;
 
     module tubes() {
-        for (row = [ 0 : num - 1]) {
+        for (row = [ 0 : nest_holes - 1]) {
             assign(mirror=(row == 0) ? [1] : [-1,1])
             for (i = mirror) {
                 for (col = [0 :dia - row -1]) {
                     assign(x = col * x_adj + row * x_adj/2, y = i * row * y_adj)
-                        translate([x,y,-o]) cylinder(r=tube_r, h=height+2*o);
+                        translate([x,y,-o]) cylinder(r=tube_r, h=nest_height+2*o);
                 }
             }
         }
@@ -37,12 +91,12 @@ module bees(which, num=4, height=150, $fn=50) {
     module box() {
         translate([outer_radius-straw_r - outer_wall,0,0]) {
             difference() {
-                cylinder(r=outer_radius, h=height, $fn=6);
+                cylinder(r=outer_radius, h=nest_height, $fn=6);
                 translate([0,0,7]) rotate_extrude(convexity = 10, $fn=6) {
                     translate([outer_radius,0]) circle(r=2, $fn=20);
                 }
-                if (height >= 20)
-                    translate([0,0,height-7]) rotate_extrude(convexity = 10, $fn=6) {
+                if (nest_height >= 20)
+                    translate([0,0,nest_height-7]) rotate_extrude(convexity = 10, $fn=6) {
                         translate([outer_radius,0]) circle(r=2, $fn=20);
                     }
             }
@@ -56,13 +110,13 @@ module bees(which, num=4, height=150, $fn=50) {
         }
     }
 
-    module shroud(height=50, ridge_height=14) {
+    module shroud(nest_height=50, ridge_height=14) {
         rad = outer_radius + .5;
         difference() {
             union() {
                 difference() {
-                    cylinder(r=rad+2, h=height, $fn=6);
-                    translate([0,0,-o]) cylinder(r=rad, h=height+2*o, $fn=6);
+                    cylinder(r=rad+2, h=nest_height, $fn=6);
+                    translate([0,0,-o]) cylinder(r=rad, h=nest_height+2*o, $fn=6);
                 }
                 translate([0,0,ridge_height])
                     intersection() {
@@ -72,7 +126,7 @@ module bees(which, num=4, height=150, $fn=50) {
                         }
                     }
             }
-            translate([rad*1.1,0,-o]) cylinder(r=rad,height+2*o,$fn=6);
+            translate([rad*1.1,0,-o]) cylinder(r=rad,nest_height+2*o,$fn=6);
         }
     }
 
@@ -85,9 +139,8 @@ module bees(which, num=4, height=150, $fn=50) {
                 // hanger
                 translate([-(rad+5)*1.25,0,0])
                     difference() {
-                        union() {
+                        hull() {
                             translate([rad/3.5,0,0])
-                                // this really needs to be a cube, to account for num >= 6
                                 cylinder(r=16, h=2, $fn=6);
                             cylinder(r=16, h=2, $fn=6);
                         }
@@ -115,11 +168,12 @@ module bees(which, num=4, height=150, $fn=50) {
         }
     }
 
-    if (which == BEE_NEST)
+    // Render the requested part(s)
+    if (which_part == "Nest")
         nest_box();
-    else if (which == BEE_BASE)
+    else if (which_part == "Base")
         base();
-    else if (which == BEE_SHROUD)
+    else if (which_part == "Shroud")
         shroud(50);
     else {
         nest_box();
@@ -129,5 +183,3 @@ module bees(which, num=4, height=150, $fn=50) {
 
 }
 
-bees(which="all", num=4, height=100);
-//translate([-85,55,0]) bees(which=BEE_NEST, num=4, height=15);
