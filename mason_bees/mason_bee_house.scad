@@ -91,7 +91,16 @@ module mason_bee_house(nest_height=150, nest_holes=4, which_part="All", $fn=25) 
     module box() {
         translate([outer_radius-straw_r - outer_wall,0,0]) {
             difference() {
-                cylinder(r=outer_radius, h=nest_height, $fn=6);
+                union() {
+                    cylinder(r=outer_radius, h=nest_height, $fn=6);
+                    // A shelf to rest on the pin that holds this onto the base.
+                    translate([-10,outer_radius-(sqrt(2)*12),35]) rotate([0,85,0]) {
+                        hull() {
+                            rotate([0,0,45]) cube([15,15,4]);
+                            translate([5,0,0]) rotate([0,0,45]) cube([15,15,4]);
+                        }
+                    }
+                }
                 translate([0,0,7]) rotate_extrude(convexity = 10, $fn=6) {
                     translate([outer_radius,0]) circle(r=2, $fn=20);
                 }
@@ -134,8 +143,6 @@ module mason_bee_house(nest_height=150, nest_holes=4, which_part="All", $fn=25) 
         rad = outer_radius + .5;
         difference() {
             union() {
-                cylinder(r=rad+5, h=2, $fn=6);
-                translate([3,0,0]) cylinder(r=rad+5, h=2, $fn=6);
                 // hanger
                 translate([-(rad+5)*1.25,0,0])
                     difference() {
@@ -161,9 +168,16 @@ module mason_bee_house(nest_height=150, nest_holes=4, which_part="All", $fn=25) 
                             translate([rad/2.2,-rad,0]) cube([2*rad,2*rad,20*2]);
                         }
                     }
-                // nest_box support bump
-                translate([rad+5.5,0,1]) sphere(r=2);
+                // Tube for the pin which holds the box onto the base.
+                translate([0,sin(60)*rad+5,0]) difference() {
+                    cylinder(r=5,h=30);
+                    translate([0,0,-o]) cylinder(r=3,h=30+2*o);
+                    translate([0,0,30]) rotate([0,5,0]) cube([20,20,10], center=true);
+                }
             }
+            // Save a little plastic by cutting out the center of the base
+            translate([0,0,2]) cylinder(r=rad-8, h=10, $fn=6);
+            // Cut off everything below zero
             translate([0,0,-50]) cylinder(r=rad*5,h=50);
         }
     }
@@ -176,7 +190,7 @@ module mason_bee_house(nest_height=150, nest_holes=4, which_part="All", $fn=25) 
     else if (which_part == "Shroud")
         shroud(50);
     else {
-        nest_box();
+        translate([outer_radius*.15,nest_holes < 4 ? -5 : 0,0]) nest_box();
         translate([outer_radius*1.5,outer_radius*2,0]) base();
         translate([0,outer_radius*2,0]) shroud();
     }
